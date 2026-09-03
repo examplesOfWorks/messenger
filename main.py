@@ -1,28 +1,14 @@
 import uvicorn
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from db.database import get_session
+from app.routers.api.users import router as users_api_router
 
 
 app = FastAPI()
 
 
-@app.get("/")
-async def db_check(
-    session: AsyncSession = Depends(get_session)
-):
-    try:
-        value = await session.execute(text("SELECT 1"))
-        result = value.scalar_one()
-
-        return {"database": result}
-
-    except Exception as e:
-        return {"message": "Connection failed", "error": str(e)}, 500
+app.include_router(users_api_router)
 
 
 
