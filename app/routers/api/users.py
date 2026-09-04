@@ -144,3 +144,14 @@ async def profile(
     current_user: User = Depends(get_current_api_user)
 ):
     return current_user
+
+
+@router.get("/users", response_model=list[UserResponse])
+async def users_list(
+    session: AsyncSession = Depends(get_session)
+):
+
+    result = await session.execute(select(User))
+    users = result.scalars().all()
+
+    return users
