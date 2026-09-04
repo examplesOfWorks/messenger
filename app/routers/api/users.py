@@ -12,7 +12,7 @@ from db.models.users import User
 from app.security import hash_password, verify_password, create_access_token
 from app.schemas.users import UserCreate, UserResponse, TokenResponse
 from app.services.files import upload_image, delete_image
-from app.dependencies import get_current_api_user
+from app.services.auth import get_current_api_user
 
 router = APIRouter(
     prefix="/api-users",
