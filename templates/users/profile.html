@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Профиль — {{ current_user.username }}
+{% endblock %}
+
+{% block content %}
+
+<div class="container py-5">
+
+    <div class="row justify-content-center">
+
+        <div class="col-12 col-md-8 col-lg-6">
+
+            <!-- Профиль -->
+            <div class="card shadow-sm border-0 mb-4">
+
+                <div class="card-body text-center p-4">
+
+                    <!-- Фото профиля -->
+                    {% if current_user.photo %}
+                        <img
+                            src="/media/users/{{ current_user.id }}/{{ current_user.photo }}"
+                            alt="Фото профиля"
+                            class="rounded-circle mb-3"
+                            width="140"
+                            height="140"
+                            style="object-fit: cover;"
+                        >
+                    {% else %}
+                        <div
+                            class="rounded-circle bg-secondary text-white
+                                   d-inline-flex align-items-center justify-content-center
+                                   mb-3"
+                            style="width: 140px; height: 140px; font-size: 3rem;"
+                        >
+                            {{ current_user.username[0]|upper }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Логин -->
+                    <h2 class="mb-1">
+                        {{ current_user.username }}
+                    </h2>
+
+                    {% if current_user.name %}
+                        <p class="text-muted mb-4">
+                            {{ current_user.name }}
+                        </p>
+                    {% endif %}
+
+                    <!-- Информация о пользователе -->
+                    <div class="text-start">
+
+                        <div class="border-bottom py-3">
+                            <div class="text-muted small">
+                                Логин
+                            </div>
+                            <div class="fw-semibold">
+                                {{ current_user.username }}
+                            </div>
+                        </div>
+
+                        <div class="border-bottom py-3">
+                            <div class="text-muted small">
+                                Имя
+                            </div>
+                            <div class="fw-semibold">
+                                {{ current_user.name or "Не указано" }}
+                            </div>
+                        </div>
+
+                        <div class="py-3">
+                            <div class="text-muted small">
+                                Email
+                            </div>
+                            <div class="fw-semibold">
+                                {{ current_user.email }}
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

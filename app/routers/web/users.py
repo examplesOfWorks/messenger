@@ -11,8 +11,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.users import UserCreate
-from app.security import hash_password
+from app.security import hash_password, verify_password, create_access_token
 from app.services.files import upload_image, delete_image
+from app.services.auth import get_current_web_user
 
 
 templates = Jinja2Templates(directory="templates")
@@ -144,3 +145,89 @@ def login_page(request: Request):
         request=request,
         name="/users/login.html"
     )
+
+
+@router.post("/login", include_in_schema=False)
+async def login(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    session: AsyncSession = Depends(get_session)
+):
+    result = await session.execute(
+        select(User).where(User.username == username)
+    )
+
+    existing_user = result.scalar_one_or_none()
+
+    if existing_user is None:
+        return templates.TemplateResponse(
+            request=request,
+            name="users/login.html",
+            context={
+                "error": "Неверное имя пользователя или пароль",
+                "username": username,
+            },
+            status_code=401
+        )
+
+    if not verify_password(
+        password,
+        existing_user.password_hash
+    ):
+        return templates.TemplateResponse(
+            request=request,
+            name="users/login.html",
+            context={
+                "error": "Неверное имя пользователя или пароль",
+                "username": username,
+            },
+            status_code=401
+        )
+
+    access_token = create_access_token(existing_user.id)
+
+    response = RedirectResponse(
+        url="/users/profile",
+        status_code=303
+    )
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True
+    )
+
+    return response
+
+
+@router.get("/profile", include_in_schema=False)
+async def profile(
+    request: Request,
+    current_user: User = Depends(get_current_web_user)
+):
+    if not current_user:
+        return RedirectResponse(
+            url="/users/login",
+            status_code=303
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="users/profile.html",
+        context={
+            "current_user": current_user
+        }
+    )
+
+
+@router.get("/logout", include_in_schema=False)
+def logout_user():
+    response = RedirectResponse(
+        url="/users/login",
+        status_code=303
+    )
+
+    response.delete_cookie("access_token")
+
+    return response
