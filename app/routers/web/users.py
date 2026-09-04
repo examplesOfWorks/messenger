@@ -221,6 +221,26 @@ async def profile(
     )
 
 
+@router.get("/users-list", include_in_schema=False)
+async def users_list(
+    request: Request,
+    current_user: User = Depends(get_current_web_user),
+    session: AsyncSession = Depends(get_session)
+):
+
+    result = await session.execute(select(User))
+    users = result.scalars().all()
+
+    return templates.TemplateResponse(
+            request=request,
+            name="users/users.html",
+            context={
+                "users": users,
+                "current_user": current_user
+            }
+        )
+
+
 @router.get("/logout", include_in_schema=False)
 def logout_user():
     response = RedirectResponse(
