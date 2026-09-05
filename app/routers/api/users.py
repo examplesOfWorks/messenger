@@ -4,10 +4,11 @@ from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import ValidationError
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.database import get_session
-from db.models.users import User
+from db.models.users import User, Friendship
 
 from app.security import hash_password, verify_password, create_access_token
 from app.schemas.users import UserCreate, UserResponse, TokenResponse
@@ -168,3 +169,66 @@ async def users_list(
     users = result.scalars().all()
 
     return users
+
+
+@router.post("/friend-request/{user_id}")
+async def friend_request(
+    user_id: int,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_api_user)
+):
+    if user_id == current_user.id:
+        raise HTTPException(
+            status_code=400,
+            detail="Нельзя добавить самого себя в друзья"
+        )
+
+    target_user = await session.get(User, user_id)
+
+    if target_user is None:
+        raise HTTPException(
+        status_code=404,
+        detail="Пользователь не найден"
+    )
+
+    result = await session.execute(
+        select(Friendship).where(
+            (
+                (Friendship.requester_id == current_user.id)
+                & (Friendship.addressee_id == user_id)
+            ) |
+            (
+                (Friendship.requester_id == user_id)
+                & (Friendship.addressee_id == current_user.id)
+            )
+        )
+    )
+
+    if result.scalar_one_or_none() is not None:
+        raise HTTPException(
+            status_code=400,
+            detail="Отношение между пользователями уже существует"
+        )
+
+    friendship = Friendship(
+        requester_id=current_user.id,
+        addressee_id=user_id
+    )
+
+    session.add(friendship)
+
+    try:
+        await session.commit()
+
+    except IntegrityError:
+        await session.rollback()
+
+        raise HTTPException(
+            status_code=400,
+            detail="Отношение между пользователями уже существует",
+        )
+
+    await session.refresh(friendship)
+
+    return friendship
+
