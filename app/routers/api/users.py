@@ -6,6 +6,7 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from db.database import get_session
 from db.models.users import User, Friendship
@@ -170,6 +171,46 @@ async def users_list(
 
     return users
 
+
+@router.get("/friend-requests/incoming")
+async def incoming_friend_requests(
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_api_user)
+):
+    result = await session.execute(
+        select(Friendship)
+        .options(
+            selectinload(Friendship.requester)
+        )
+        .where(
+            (Friendship.addressee_id == current_user.id)
+        )
+    )
+
+    requests = result.scalars().all()
+
+    return requests
+
+
+@router.get("/friend-requests/outgoing")
+async def outgoing_friend_requests(
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_api_user)
+):
+    result = await session.execute(
+        select(Friendship)
+        .options(
+            selectinload(Friendship.addressee)
+        )
+        .where(
+            (Friendship.requester_id == current_user.id)
+        )
+    )
+
+    requests = result.scalars().all()
+
+    return requests
+    
 
 @router.post("/friend-request/{user_id}")
 async def friend_request(
