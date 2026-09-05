@@ -138,12 +138,25 @@ async def login(
         "token_type": "bearer"
     }
 
-
 @router.get("/profile", response_model=UserResponse)
+@router.get("/profile/{user_id}", response_model=UserResponse)
 async def profile(
+    user_id: int | None = None,
+    session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_api_user)
 ):
-    return current_user
+    if user_id is None:
+        return current_user
+
+    user = await session.get(User, user_id)
+
+    if user is None:
+        raise HTTPException(
+        status_code=404,
+        detail="Пользователь не найден"
+    )
+
+    return user
 
 
 @router.get("/users", response_model=list[UserResponse])
