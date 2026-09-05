@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-    Профиль — {{ current_user.username }}
+    Профиль — {{ user.username }}
 {% endblock %}
 
 {% block content %}
@@ -18,9 +18,9 @@
                 <div class="card-body text-center p-4">
 
                     <!-- Фото профиля -->
-                    {% if current_user.photo %}
+                    {% if user.photo %}
                         <img
-                            src="/media/users/{{ current_user.id }}/{{ current_user.photo }}"
+                            src="/media/users/{{ user.id }}/{{ user.photo }}"
                             alt="Фото профиля"
                             class="rounded-circle mb-3"
                             width="140"
@@ -34,18 +34,18 @@
                                    mb-3"
                             style="width: 140px; height: 140px; font-size: 3rem;"
                         >
-                            {{ current_user.username[0]|upper }}
+                            {{ user.username[0]|upper }}
                         </div>
                     {% endif %}
 
                     <!-- Логин -->
                     <h2 class="mb-1">
-                        {{ current_user.username }}
+                        {{ user.username }}
                     </h2>
 
-                    {% if current_user.name %}
+                    {% if user.name %}
                         <p class="text-muted mb-4">
-                            {{ current_user.name }}
+                            {{ user.name }}
                         </p>
                     {% endif %}
 
@@ -57,7 +57,7 @@
                                 Логин
                             </div>
                             <div class="fw-semibold">
-                                {{ current_user.username }}
+                                {{ user.username }}
                             </div>
                         </div>
 
@@ -66,7 +66,7 @@
                                 Имя
                             </div>
                             <div class="fw-semibold">
-                                {{ current_user.name or "Не указано" }}
+                                {{ user.name or "Не указано" }}
                             </div>
                         </div>
 
@@ -75,7 +75,7 @@
                                 Email
                             </div>
                             <div class="fw-semibold">
-                                {{ current_user.email }}
+                                {{ user.email }}
                             </div>
                         </div>
 

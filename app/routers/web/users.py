@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Form, UploadFile, Depends, File
+from fastapi import APIRouter, Request, Form, UploadFile, Depends, File, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -202,21 +202,37 @@ async def login(
 
 
 @router.get("/profile", include_in_schema=False)
+@router.get("/profile/{user_id}", include_in_schema=False)
 async def profile(
     request: Request,
+    session: AsyncSession = Depends(get_session),
+    user_id: int | None = None,
     current_user: User = Depends(get_current_web_user)
 ):
+
     if not current_user:
         return RedirectResponse(
             url="/users/login",
             status_code=303
         )
 
+    if user_id is None:
+        user = current_user
+    else:
+        user = await session.get(User, user_id)
+
+    if user is None:
+        raise HTTPException(
+        status_code=404,
+        detail="Пользователь не найден"
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="users/profile.html",
         context={
-            "current_user": current_user
+            "current_user": current_user,
+            "user": user
         }
     )
 
