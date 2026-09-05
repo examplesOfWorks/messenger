@@ -16,6 +16,32 @@
             <div class="card shadow-sm border-0 mb-4">
 
                 <div class="card-body text-center p-4">
+                    {% if success %}
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            {{ success }}
+
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="alert"
+                                aria-label="Закрыть"
+                            ></button>
+                        </div>
+                    {% endif %}
+
+                    {% if error %}
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            {{ error }}
+
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="alert"
+                                aria-label="Закрыть"
+                            ></button>
+                        </div>
+                    {% endif %}
+
 
                     <!-- Фото профиля -->
                     {% if user.photo %}
@@ -47,6 +73,19 @@
                         <p class="text-muted mb-4">
                             {{ user.name }}
                         </p>
+                    {% endif %}
+
+                    <!-- Кнопка добавления в друзья --> 
+                    {% if friendship_status == "outgoing" %}
+                        <p>Ваша заявка в друзья находится на рассмотрении</p>
+                    {% elif friendship_status == "incoming" %}
+                        <p>Этот пользователь хочет добавить вас в друзья</p>
+                    {% elif current_user and current_user.id != user.id and not friendship_status%} 
+                    <form method="post" action="/users/friend-request/{{ user.id }}" class="mb-4" >
+                        <button type="submit" class="btn btn-primary w-100" > 
+                            Добавить в друзья
+                        </button> 
+                    </form> 
                     {% endif %}
 
                     <!-- Информация о пользователе -->

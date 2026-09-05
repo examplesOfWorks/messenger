@@ -1,13 +1,14 @@
-from fastapi import APIRouter, Request, Form, UploadFile, Depends, File, HTTPException
+from fastapi import APIRouter, Request, Form, UploadFile, Depends, File, HTTPException, Query
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from pydantic import ValidationError
 
 from db.database import get_session
-from db.models.users import User
+from db.models.users import User, Friendship
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.users import UserCreate
@@ -207,7 +208,9 @@ async def profile(
     request: Request,
     session: AsyncSession = Depends(get_session),
     user_id: int | None = None,
-    current_user: User = Depends(get_current_web_user)
+    current_user: User = Depends(get_current_web_user),
+    success: str | None = Query(default=None),
+    error: str | None = Query(default=None)
 ):
 
     if not current_user:
@@ -227,12 +230,41 @@ async def profile(
         detail="Пользователь не найден"
     )
 
+    friendship = None
+    friendship_status = ""
+
+    if user.id != current_user.id:
+        result = await session.execute(
+            select(Friendship).where(
+                (
+                    (Friendship.requester_id == current_user.id)
+                    & (Friendship.addressee_id == user_id)
+                ) |
+                (
+                    (Friendship.requester_id == user_id)
+                    & (Friendship.addressee_id == current_user.id)
+                )
+            )
+        )
+
+        friendship = result.scalar_one_or_none()
+
+        if friendship is not None:
+            print(friendship.status, friendship.requester_id == current_user.id)
+            if friendship.status == "pending" and friendship.requester_id == current_user.id:
+                friendship_status = "outgoing"
+            elif friendship.status == "pending" and friendship.addressee_id == current_user.id:
+                friendship_status = "incoming"
+
     return templates.TemplateResponse(
         request=request,
         name="users/profile.html",
         context={
             "current_user": current_user,
-            "user": user
+            "user": user,
+            "success": success,
+            "error": error,
+            "friendship_status": friendship_status
         }
     )
 
@@ -255,6 +287,73 @@ async def users_list(
                 "current_user": current_user
             }
         )
+
+
+@router.post("/friend-request/{user_id}", include_in_schema=False)
+async def friend_request(
+    user_id: int,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_web_user)
+):
+
+    if user_id == current_user.id:
+        return RedirectResponse(
+            url=f"/users/profile/{user_id}?error=Нельзя добавить самого себя",
+            status_code=303,
+        )
+
+    target_user = await session.get(User, user_id)
+
+    if target_user is None:
+        return RedirectResponse(
+            url="/users?error=Пользователь не найден",
+            status_code=303,
+        )
+
+    result = await session.execute(
+        select(Friendship).where(
+            (
+                (Friendship.requester_id == current_user.id)
+                & (Friendship.addressee_id == user_id)
+            ) |
+            (
+                (Friendship.requester_id == user_id)
+                & (Friendship.addressee_id == current_user.id)
+            )
+        )
+    )
+
+    if result.scalar_one_or_none() is not None:
+        return RedirectResponse(
+            url=f"/users/profile/{user_id}?error=Заявка уже была отправлена",
+            status_code=303,
+        )
+
+    friendship = Friendship(
+        requester_id=current_user.id,
+        addressee_id=user_id
+    )
+
+    session.add(friendship)
+
+    try:
+        await session.commit()
+
+    except IntegrityError:
+        await session.rollback()
+
+        return RedirectResponse(
+            url=f"/users/profile/{user_id}?error=Не удалось отправить заявку",
+            status_code=303,
+        )
+
+    await session.refresh(friendship)
+
+    return RedirectResponse(
+        url=f"/users/profile/{user_id}?success=Заявка отправлена",
+        status_code=303,
+    )
+
 
 
 @router.get("/logout", include_in_schema=False)
