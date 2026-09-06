@@ -185,7 +185,8 @@ async def incoming_friend_requests(
             selectinload(Friendship.requester)
         )
         .where(
-            (Friendship.addressee_id == current_user.id)
+            Friendship.addressee_id == current_user.id,
+            Friendship.status == "pending"
         )
     )
 
@@ -205,7 +206,8 @@ async def outgoing_friend_requests(
             selectinload(Friendship.addressee)
         )
         .where(
-            (Friendship.requester_id == current_user.id)
+            Friendship.requester_id == current_user.id,
+            Friendship.status == "pending"
         )
     )
 
@@ -297,7 +299,7 @@ async def accept_friendship(
         status_code=404,
         detail="Заявка не найдена"
     )
-
+ 
     friendship.status = "accepted"
     friendship.accepted_at = datetime.now(timezone.utc)
 
