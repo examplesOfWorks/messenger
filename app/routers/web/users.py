@@ -18,6 +18,8 @@ from app.services.files import upload_image, delete_image
 from app.services.auth import get_current_web_user
 from app.services.friendship import get_friend_request_counts
 
+from datetime import datetime, timezone
+
 
 templates = Jinja2Templates(directory="templates")
 
@@ -436,6 +438,96 @@ async def friend_request(
         status_code=303,
     )
 
+
+@router.post("/friend-request/{friendship_id}/accept", include_in_schema=False)
+async def accept_friendship(
+    friendship_id: int,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_web_user)
+):
+
+    friendship = await session.scalar(
+        select(Friendship).where(
+            Friendship.id == friendship_id,
+            Friendship.addressee_id == current_user.id,
+            Friendship.status == "pending"
+        )
+    )
+
+    if friendship is None:
+        return RedirectResponse(
+        url=f"/users/friend-requests/incoming?error=Заявка не найдена",
+        status_code=303,
+    )
+ 
+    friendship.status = "accepted"
+    friendship.accepted_at = datetime.now(timezone.utc)
+
+    await session.commit()
+
+    return RedirectResponse(
+        url=f"/users/friend-requests/incoming?success=Заявка принята",
+        status_code=303,
+    )
+
+@router.post("/friend-request/{friendship_id}/reject", include_in_schema=False)
+async def reject_friendship(
+    friendship_id: int,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_web_user)
+):
+
+    friendship = await session.scalar(
+        select(Friendship).where(
+            Friendship.id == friendship_id,
+            Friendship.addressee_id == current_user.id,
+            Friendship.status == "pending"
+        )
+    )
+
+    if friendship is None:
+        return RedirectResponse(
+        url=f"/users/friend-requests/incoming?error=Заявка не найдена",
+        status_code=303,
+    )
+
+    await session.delete(friendship)
+    await session.commit()
+
+    return RedirectResponse(
+        url=f"/users/friend-requests/incoming?success=Вы отклонили заявку",
+        status_code=303,
+    )
+
+
+@router.post("/friend-request/{friendship_id}/cancel", include_in_schema=False)
+async def cancel_friendship(
+    friendship_id: int,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_web_user)
+):
+
+    friendship = await session.scalar(
+        select(Friendship).where(
+            Friendship.id == friendship_id,
+            Friendship.requester_id == current_user.id,
+            Friendship.status == "pending"
+        )
+    )
+
+    if friendship is None:
+        return RedirectResponse(
+            url=f"/users/friend-requests/outgoing?error=Заявка не найдена",
+            status_code=303,
+        )
+
+    await session.delete(friendship)
+    await session.commit()
+
+    return RedirectResponse(
+        url=f"/users/friend-requests/outgoing?success=Вы отменили заявку",
+        status_code=303,
+    )
 
 
 @router.get("/logout", include_in_schema=False)
