@@ -16,6 +16,8 @@ from app.schemas.users import UserCreate, UserResponse, TokenResponse
 from app.services.files import upload_image, delete_image
 from app.services.auth import get_current_api_user
 
+from datetime import datetime, timezone
+
 router = APIRouter(
     prefix="/api-users",
     tags=["Пользователи"],
@@ -273,3 +275,86 @@ async def friend_request(
 
     return friendship
 
+
+@router.post("/friend-request/{friendship_id}/accept")
+async def accept_friendship(
+    friendship_id: int,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_api_user)
+):
+
+    friendship = await session.scalar(
+        select(Friendship).where(
+            Friendship.id == friendship_id,
+            Friendship.addressee_id == current_user.id,
+            Friendship.status == "pending"
+        )
+    )
+
+
+    if friendship is None:
+        raise HTTPException(
+        status_code=404,
+        detail="Заявка не найдена"
+    )
+
+    friendship.status = "accepted"
+    friendship.accepted_at = datetime.now(timezone.utc)
+
+    await session.commit()
+
+    return friendship
+
+
+@router.delete("/friend-request/{friendship_id}/reject")
+async def reject_friendship(
+    friendship_id: int,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_api_user)
+):
+
+    friendship = await session.scalar(
+        select(Friendship).where(
+            Friendship.id == friendship_id,
+            Friendship.addressee_id == current_user.id,
+            Friendship.status == "pending"
+        )
+    )
+
+    if friendship is None:
+        raise HTTPException(
+        status_code=404,
+        detail="Заявка не найдена"
+    )
+
+    await session.delete(friendship)
+    await session.commit()
+
+    return {"message": "Вы отклонили заявку"}
+
+
+@router.delete("/friend-request/{friendship_id}/cancel")
+async def cancel_friendship(
+    friendship_id: int,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_api_user)
+):
+
+    friendship = await session.scalar(
+        select(Friendship).where(
+            Friendship.id == friendship_id,
+            Friendship.requester_id == current_user.id,
+            Friendship.status == "pending"
+        )
+    )
+
+    if friendship is None:
+        raise HTTPException(
+        status_code=404,
+        detail="Заявка не найдена"
+    )
+
+    await session.delete(friendship)
+    await session.commit()
+
+    return {"message": "Вы отменили заявку"}
