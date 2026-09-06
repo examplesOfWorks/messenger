@@ -7,14 +7,16 @@ from pydantic import ValidationError
 from db.database import get_session
 from db.models.users import User, Friendship
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.schemas.users import UserCreate
 from app.security import hash_password, verify_password, create_access_token
 from app.services.files import upload_image, delete_image
 from app.services.auth import get_current_web_user
+from app.services.friendship import get_friend_request_counts
 
 
 templates = Jinja2Templates(directory="templates")
@@ -266,6 +268,86 @@ async def profile(
             "error": error,
             "friendship_status": friendship_status
         }
+    )
+
+@router.get("/friend-requests/incoming", include_in_schema=False)
+async def incoming_friend_requests(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_web_user)
+):
+    if not current_user:
+        return RedirectResponse(
+            url="/users/login",
+            status_code=303
+        )
+
+    result = await session.execute(
+        select(Friendship)
+        .options(
+            selectinload(Friendship.requester)
+        )
+        .where(
+            Friendship.addressee_id == current_user.id,
+            Friendship.status == "pending"
+        )
+    )
+
+    requests = result.scalars().all()
+
+    incoming_count, outgoing_count = await get_friend_request_counts(session, current_user.id)
+    
+    return templates.TemplateResponse(
+        request=request,
+        name="users/friend_requests.html",
+        context={
+            "current_user": current_user,
+            "requests": requests,
+            "request_type": "incoming",
+            "incoming_count": incoming_count,
+            "outgoing_count": outgoing_count
+        },
+    )
+
+
+@router.get("/friend-requests/outgoing", include_in_schema=False)
+async def outgoing_friend_requests(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_web_user)
+):
+    if not current_user:
+        return RedirectResponse(
+            url="/users/login",
+            status_code=303
+        )
+
+    result = await session.execute(
+        select(Friendship)
+        .options(
+            selectinload(Friendship.addressee)
+        )
+        .where(
+            Friendship.requester_id == current_user.id,
+            Friendship.status == "pending"
+        )
+    )
+
+
+    requests = result.scalars().all()
+
+    incoming_count, outgoing_count = await get_friend_request_counts(session, current_user.id)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="users/friend_requests.html",
+        context={
+            "current_user": current_user,
+            "requests": requests,
+            "request_type": "outgoing",
+            "incoming_count": incoming_count,
+            "outgoing_count": outgoing_count
+        },
     )
 
 

@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Заявки в друзья
+{% endblock %}
+
+{% block content %}
+
+<div class="container py-4">
+
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+
+            <h1 class="mb-4">
+                Заявки в друзья
+            </h1>
+
+
+            <!-- Вкладки -->
+
+            <ul class="nav nav-tabs mb-4">
+
+                <li class="nav-item">
+                    <a
+                        class="nav-link {% if request_type == 'incoming' %}active{% endif %}"
+                        href="/users/friend-requests/incoming"
+                    >
+                        Входящие
+            
+                        {% if incoming_count > 0 %}
+                            <span class="badge bg-danger ms-1">
+                                {{ incoming_count }}
+                            </span>
+                        {% endif %}
+                    </a>
+                </li>
+            
+                <li class="nav-item">
+                    <a
+                        class="nav-link {% if request_type == 'outgoing' %}active{% endif %}"
+                        href="/users/friend-requests/outgoing"
+                    >
+                        Исходящие
+            
+                        {% if outgoing_count > 0 %}
+                            <span class="badge bg-secondary ms-1">
+                                {{ outgoing_count }}
+                            </span>
+                        {% endif %}
+                    </a>
+                </li>
+            
+            </ul>
+
+
+            {% if requests %}
+
+                {% for friendship in requests %}
+
+                    {% if request_type == "incoming" %}
+
+                        {% set user = friendship.requester %}
+
+                    {% else %}
+
+                        {% set user = friendship.addressee %}
+
+                    {% endif %}
+
+
+                    <div class="card mb-3">
+
+                        <div class="card-body">
+
+                            <div class="d-flex align-items-center">
+
+                                <!-- Аватар -->
+
+                                <div class="me-3">
+
+                                    {% if user.photo %}
+
+                                        <img
+                                            src="/media/users/{{ user.id }}/{{ user.photo }}"
+                                            alt="{{ user.username }}"
+                                            width="56"
+                                            height="56"
+                                            class="rounded-circle object-fit-cover"
+                                        >
+
+                                    {% else %}
+
+                                        <div
+                                            class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center"
+                                            style="width: 56px; height: 56px;"
+                                        >
+                                            {{ user.username[0]|upper }}
+                                        </div>
+
+                                    {% endif %}
+
+                                </div>
+
+
+                                <!-- Пользователь -->
+
+                                <div class="flex-grow-1">
+
+                                    <a
+                                        href="/users/profile/{{ user.id }}"
+                                        class="text-decoration-none"
+                                    >
+                                        <strong>
+                                            {{ user.name or user.username }}
+                                        </strong>
+                                    </a>
+
+                                    <div class="text-muted">
+                                        @{{ user.username }}
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <!-- Действия -->
+
+                            {% if request_type == "incoming" %}
+
+                                <div class="d-flex gap-2 mt-3">
+
+                                    <form
+                                        method="post"
+                                        action="#"
+                                        class="flex-grow-1"
+                                    >
+                                        <button
+                                            type="submit"
+                                            class="btn btn-success w-100"
+                                        >
+                                            Принять
+                                        </button>
+                                    </form>
+
+                                    <form
+                                        method="post"
+                                        action="#"
+                                        class="flex-grow-1"
+                                    >
+                                        <button
+                                            type="submit"
+                                            class="btn btn-outline-danger w-100"
+                                        >
+                                            Отклонить
+                                        </button>
+                                    </form>
+
+                                </div>
+
+                            {% else %}
+
+                                <form
+                                    method="post"
+                                    action="#"
+                                    class="mt-3"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="btn btn-outline-secondary w-100"
+                                    >
+                                        Отменить заявку
+                                    </button>
+                                </form>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="text-center text-muted py-5">
+
+                    {% if request_type == "incoming" %}
+
+                        <h5>Нет входящих заявок</h5>
+
+                        <p>
+                            Здесь будут отображаться заявки от других пользователей.
+                        </p>
+
+                    {% else %}
+
+                        <h5>Нет исходящих заявок</h5>
+
+                        <p>
+                            Здесь будут отображаться отправленные вами заявки.
+                        </p>
+
+                    {% endif %}
+
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
