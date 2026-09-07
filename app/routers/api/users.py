@@ -215,7 +215,7 @@ async def users_list(
     return users
 
 
-@router.get("/friend-requests/incoming")
+@router.get("/friend-requests/incoming", response_model=list[FriendRequestResponse])
 async def incoming_friend_requests(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_api_user)
@@ -236,7 +236,7 @@ async def incoming_friend_requests(
     return requests
 
 
-@router.get("/friend-requests/outgoing")
+@router.get("/friend-requests/outgoing", response_model=list[FriendRequestResponse])
 async def outgoing_friend_requests(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_api_user)
