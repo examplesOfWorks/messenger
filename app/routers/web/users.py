@@ -12,13 +12,15 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.schemas.users import UserCreate
+from app.schemas.users import UserCreate, FriendResponse
 from app.security import hash_password, verify_password, create_access_token
 from app.services.files import upload_image, delete_image
 from app.services.auth import get_current_web_user
 from app.services.friendship import get_friend_request_counts
 
 from datetime import datetime, timezone
+
+import itertools
 
 
 templates = Jinja2Templates(directory="templates")
@@ -204,6 +206,73 @@ async def login(
     )
 
     return response
+
+
+@router.get("/profile/friends", include_in_schema=False)
+async def users_friends(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_web_user),
+):
+
+    if not current_user:
+        return RedirectResponse(
+            url="/users/login",
+            status_code=303
+        )
+
+    requester_result = await session.execute(
+        select(Friendship)
+        .options(
+            selectinload(Friendship.addressee)
+        )
+        .where(
+            Friendship.requester_id == current_user.id,
+            Friendship.status == "accepted"
+        )
+    )
+
+    addressee_result = await session.execute(
+        select(Friendship)
+        .options(
+            selectinload(Friendship.requester)
+        )
+        .where(
+            Friendship.addressee_id == current_user.id,
+            Friendship.status == "accepted"
+        )
+    )
+
+    requester_friendships = requester_result.scalars().all()
+    addressee_friendships = addressee_result.scalars().all()
+
+    friendships = list(itertools.chain(requester_friendships, addressee_friendships))
+
+    friendships.sort(key=lambda friendship: friendship.accepted_at, reverse=True)
+
+    friends = []
+
+    for friendship in friendships:
+        if friendship.requester_id == current_user.id:
+            friend = friendship.addressee
+        else:
+            friend= friendship.requester
+
+        friends.append(
+            FriendResponse(
+                accepted_at=friendship.accepted_at,
+                friend=friend,
+            )
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="users/friends.html",
+        context={
+            "current_user": current_user,
+            "friends": friends
+        }
+    )
 
 
 @router.get("/profile", include_in_schema=False)

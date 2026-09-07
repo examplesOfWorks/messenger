@@ -54,6 +54,7 @@ class FriendRequestResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class FriendResponse(BaseModel):
     accepted_at: datetime | None
     friend: FriendRequestUserResponse
