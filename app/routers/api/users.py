@@ -12,7 +12,7 @@ from db.database import get_session
 from db.models.users import User, Friendship
 
 from app.security import hash_password, verify_password, create_access_token
-from app.schemas.users import UserCreate, UserResponse, TokenResponse, FriendRequestResponse
+from app.schemas.users import UserCreate, UserResponse, TokenResponse, FriendRequestResponse, FriendResponse
 from app.services.files import upload_image, delete_image
 from app.services.auth import get_current_api_user
 
@@ -20,10 +20,12 @@ from datetime import datetime, timezone
 
 import itertools
 
+
 router = APIRouter(
     prefix="/api-users",
     tags=["Пользователи"],
 )
+
 
 @router.post("/register", response_model=UserResponse)
 async def register_user(
@@ -145,7 +147,7 @@ async def login(
     }
 
 
-@router.get("/profile/friends", response_model=list[FriendRequestResponse])
+@router.get("/profile/friends", response_model=list[FriendResponse])
 async def users_friends(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_api_user),
@@ -175,9 +177,24 @@ async def users_friends(
     requester_friendships = requester_result.scalars().all()
     addressee_friendships = addressee_result.scalars().all()
 
-    friends = list(itertools.chain(requester_friendships, addressee_friendships))
+    friendships = list(itertools.chain(requester_friendships, addressee_friendships))
 
-    friends.sort(key=lambda friendship: friendship.accepted_at, reverse=True)
+    friendships.sort(key=lambda friendship: friendship.accepted_at, reverse=True)
+
+    friends = []
+
+    for friendship in friendships:
+        if friendship.requester_id == current_user.id:
+            friend = friendship.addressee
+        else:
+            friend= friendship.requester
+
+        friends.append(
+            FriendResponse(
+                accepted_at=friendship.accepted_at,
+                friend=friend,
+            )
+        )
 
     return friends
 
