@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from pydantic import ValidationError
 
-from sqlalchemy import select
+from sqlalchemy import select, union_all
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -12,11 +12,13 @@ from db.database import get_session
 from db.models.users import User, Friendship
 
 from app.security import hash_password, verify_password, create_access_token
-from app.schemas.users import UserCreate, UserResponse, TokenResponse
+from app.schemas.users import UserCreate, UserResponse, TokenResponse, FriendRequestResponse
 from app.services.files import upload_image, delete_image
 from app.services.auth import get_current_api_user
 
 from datetime import datetime, timezone
+
+import itertools
 
 router = APIRouter(
     prefix="/api-users",
@@ -142,6 +144,44 @@ async def login(
         "token_type": "bearer"
     }
 
+
+@router.get("/profile/friends", response_model=list[FriendRequestResponse])
+async def users_friends(
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_api_user),
+):
+    requester_result = await session.execute(
+        select(Friendship)
+        .options(
+            selectinload(Friendship.addressee)
+        )
+        .where(
+            Friendship.requester_id == current_user.id,
+            Friendship.status == "accepted"
+        )
+    )
+
+    addressee_result = await session.execute(
+        select(Friendship)
+        .options(
+            selectinload(Friendship.requester)
+        )
+        .where(
+            Friendship.addressee_id == current_user.id,
+            Friendship.status == "accepted"
+        )
+    )
+
+    requester_friendships = requester_result.scalars().all()
+    addressee_friendships = addressee_result.scalars().all()
+
+    friends = list(itertools.chain(requester_friendships, addressee_friendships))
+
+    friends.sort(key=lambda friendship: friendship.accepted_at, reverse=True)
+
+    return friends
+
+
 @router.get("/profile", response_model=UserResponse)
 @router.get("/profile/{user_id}", response_model=UserResponse)
 async def profile(
@@ -161,6 +201,7 @@ async def profile(
     )
 
     return user
+
 
 
 @router.get("/users", response_model=list[UserResponse])
