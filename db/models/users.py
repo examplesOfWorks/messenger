@@ -12,33 +12,40 @@ class User(Base):
     id: Mapped[int] = mapped_column(
         primary_key=True
     )
+
     username: Mapped[str] = mapped_column(
         String(50),
         unique=True,
         nullable=False
     )
+
     name: Mapped[str | None] = mapped_column(
         String(50),
         nullable=True
     )
+
     email: Mapped[str] = mapped_column(
         String(255),
         unique=True,
         nullable=False
     )
+
     photo: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True
     )
+
     password_hash: Mapped[str] = mapped_column(
         String(255),
         nullable=False
     )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False
     )
+
     sent_friend_requests: Mapped[list["Friendship"]] = relationship(
         foreign_keys="Friendship.requester_id",
         back_populates="requester",
@@ -47,5 +54,15 @@ class User(Base):
     received_friend_requests: Mapped[list["Friendship"]] = relationship(
         foreign_keys="Friendship.addressee_id",
         back_populates="addressee",
+    )
+
+    conversation_members: Mapped[list["ConversationMember"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    sent_messages: Mapped[list["Message"]] = relationship(
+        foreign_keys="Message.sender_id",
+        back_populates="sender"
     )
 

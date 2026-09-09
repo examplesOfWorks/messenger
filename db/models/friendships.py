@@ -12,36 +12,44 @@ class Friendship(Base):
     id: Mapped[int] = mapped_column(
         primary_key=True
     )
+
     requester_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
+
     addressee_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
+
     status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
         default="pending",
     )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
     )
+
     accepted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
+
     requester: Mapped["User"] = relationship(
         foreign_keys=[requester_id],
         back_populates="sent_friend_requests",
     )
+
     addressee: Mapped["User"] = relationship(
         foreign_keys=[addressee_id],
         back_populates="received_friend_requests",
     )
+    
     __table_args__ = (
         Index(
             "uq_friendships_pair",
