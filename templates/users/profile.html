@@ -81,7 +81,7 @@
                     {% elif friendship_status == "incoming" %}
                         <p>Этот пользователь хочет добавить вас в друзья</p>
                     {% elif current_user and current_user.id != user.id and friendship_status == "none" %} 
-                    <form method="post" action="/users/friend-request/{{ user.id }}" class="mb-4" >
+                    <form method="post" action="/friendships/friend-requests/{{ user.id }}" class="mb-4" >
                         <button type="submit" class="btn btn-primary w-100" > 
                             Добавить в друзья
                         </button> 

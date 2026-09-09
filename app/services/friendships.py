@@ -1,7 +1,7 @@
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.models.users import Friendship
+from db.models.friendships import Friendship
 
 
 async def get_friend_request_counts(

@@ -11,24 +11,35 @@ from sqlalchemy.orm import Session
 
 from app.routers.api.users import router as users_api_router
 from app.routers.web.users import router as users_web_router
+
+from app.routers.api.friendships import router as friendships_api_router
+from app.routers.web.friendships import router as friendships_web_router
+
 from app.services.auth import get_current_web_user
+
 
 
 app = FastAPI()
 
 templates = Jinja2Templates(directory="templates")
 
+
+
 # api
 app.include_router(users_api_router)
+app.include_router(friendships_api_router)
 
 # web
 app.include_router(users_web_router)
+app.include_router(friendships_web_router)
+
 
 app.mount(
     "/media",
     StaticFiles(directory="media"),
     name="media",
 )
+
 
 @app.exception_handler(404)
 def not_found_page(request: Request, exc):
@@ -54,6 +65,8 @@ def not_found_page(request: Request, exc):
             "current_user": current_user
         }
     )
+
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", reload=True)

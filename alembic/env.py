@@ -11,6 +11,7 @@ from alembic import context
 
 from db.models.base import Base
 from db.models.users import User
+from db.models.friendships import Friendship
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
