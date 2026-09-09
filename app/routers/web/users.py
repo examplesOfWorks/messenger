@@ -304,7 +304,7 @@ async def profile(
     )
 
     friendship = None
-    friendship_status = ""
+    friendship_status = "none"
 
     if user.id != current_user.id:
         result = await session.execute(
@@ -323,11 +323,12 @@ async def profile(
         friendship = result.scalar_one_or_none()
 
         if friendship is not None:
-            print(friendship.status, friendship.requester_id == current_user.id)
             if friendship.status == "pending" and friendship.requester_id == current_user.id:
                 friendship_status = "outgoing"
             elif friendship.status == "pending" and friendship.addressee_id == current_user.id:
                 friendship_status = "incoming"
+            elif friendship.status == "accepted" and friendship.requester_id == current_user.id:
+                friendship_status = "friend"
 
     return templates.TemplateResponse(
         request=request,
