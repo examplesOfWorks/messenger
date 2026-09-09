@@ -255,7 +255,7 @@ async def profile(
                 friendship_status = "outgoing"
             elif friendship.status == "pending" and friendship.addressee_id == current_user.id:
                 friendship_status = "incoming"
-            elif friendship.status == "accepted" and friendship.requester_id == current_user.id:
+            elif friendship.status == "accepted":
                 friendship_status = "friend"
 
     return templates.TemplateResponse(

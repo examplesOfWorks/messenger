@@ -76,18 +76,20 @@
                     {% endif %}
 
                     <!-- Кнопка добавления в друзья --> 
-                    {% if friendship_status == "outgoing" %}
-                        <p>Ваша заявка в друзья находится на рассмотрении</p>
-                    {% elif friendship_status == "incoming" %}
-                        <p>Этот пользователь хочет добавить вас в друзья</p>
-                    {% elif current_user and current_user.id != user.id and friendship_status == "none" %} 
-                    <form method="post" action="/friendships/friend-requests/{{ user.id }}" class="mb-4" >
-                        <button type="submit" class="btn btn-primary w-100" > 
-                            Добавить в друзья
-                        </button> 
-                    </form> 
-                    {% elif friendship_status == "friend" %}
-                        <p>Этот пользователь в списке друзей</p>
+                    {% if current_user and current_user.id != user.id %}
+                        {% if friendship_status == "friend" %}
+                            <p>Этот пользователь в списке друзей</p>
+                        {% elif friendship_status == "outgoing" %}
+                            <p>Ваша заявка в друзья находится на рассмотрении</p>
+                        {% elif friendship_status == "incoming" %}
+                            <p>Этот пользователь хочет добавить вас в друзья</p>
+                        {% elif friendship_status == "none" %} 
+                        <form method="post" action="/friendships/friend-requests/{{ user.id }}" class="mb-4" >
+                            <button type="submit" class="btn btn-primary w-100" > 
+                                Добавить в друзья
+                            </button> 
+                        </form> 
+                        {% endif %}
                     {% endif %}
 
                     <!-- Информация о пользователе -->
