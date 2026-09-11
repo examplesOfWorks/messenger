@@ -8,12 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.database import get_session
 from db.models.users import User
-from db.models.friendships import Friendship
 
 from app.security import hash_password, verify_password, create_access_token
 from app.schemas.users import UserCreate, UserResponse, TokenResponse
 from app.services.files import upload_image, delete_image
 from app.services.auth import get_current_api_user
+
 
 
 router = APIRouter(

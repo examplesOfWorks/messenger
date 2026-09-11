@@ -15,6 +15,8 @@ from app.routers.web.users import router as users_web_router
 from app.routers.api.friendships import router as friendships_api_router
 from app.routers.web.friendships import router as friendships_web_router
 
+from app.routers.api.messenger import router as messenger_api_router
+
 from app.services.auth import get_current_web_user
 
 
@@ -28,6 +30,7 @@ templates = Jinja2Templates(directory="templates")
 # api
 app.include_router(users_api_router)
 app.include_router(friendships_api_router)
+app.include_router(messenger_api_router)
 
 # web
 app.include_router(users_web_router)
