@@ -2,18 +2,64 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from db.database import get_session
 from db.models.users import User
 from db.models.messages import Conversation, ConversationMember
 
 from app.services.auth import get_current_api_user
+from app.schemas.messenger import ConversationUserResponse, ConversationResponse
 
 
 router = APIRouter(
     prefix="/api-messenger",
     tags=["Чат"],
 )
+
+
+@router.get("/conversations/direct")
+async def get_user_conversations(
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_api_user)
+):
+    result = await session.scalars(
+        select(Conversation)
+        .options(
+            selectinload(Conversation.members)
+            .selectinload(ConversationMember.user)
+        )
+        .join(ConversationMember)
+        .where(
+            ConversationMember.user_id == current_user.id
+        )
+        .order_by(Conversation.created_at.desc())
+    )
+
+    conversations = result.all()
+
+    response = []
+
+    for conversation in conversations:
+        other_member = next(
+            member
+            for member in conversation.members
+            if member.user_id != current_user.id
+        )
+
+        response.append(
+            ConversationResponse(
+                id=conversation.id,
+                created_at=conversation.created_at,
+                other_user=ConversationUserResponse(
+                    id=other_member.user.id,
+                    username=other_member.user.username,
+                    photo=other_member.user.photo,
+                ),
+            )
+        )
+
+    return response
 
 
 @router.post("/conversations/direct/{user_id}")
@@ -86,3 +132,6 @@ async def get_or_create_conversation(
     except Exception:
         await session.rollback()
         raise
+
+
+    
