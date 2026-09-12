@@ -64,6 +64,37 @@ async def get_user_conversations(
     return response
 
 
+@router.get("/conversations/{conversation_id}/messages", response_model=list[MessageResponse])
+async def get_conversations_messages(
+    conversation_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_api_user)
+):
+
+    member = await session.scalar(
+        select(ConversationMember).where(
+            ConversationMember.conversation_id == conversation_id,
+            ConversationMember.user_id == current_user.id
+        )
+    )
+
+    if member is None:
+        raise HTTPException(
+            status_code=403,
+            detail="Вы не являетесь участником этой беседы"
+        )
+
+    result = await session.execute( 
+        select(Message).where(
+            Message.conversation_id == conversation_id,
+        )
+    )
+
+    messages = result.scalars().all()
+    
+    return messages
+
+
 @router.post("/conversations/direct/{user_id}")
 async def get_or_create_conversation(
     user_id: int,
