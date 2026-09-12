@@ -6,10 +6,12 @@ from sqlalchemy.orm import selectinload
 
 from db.database import get_session
 from db.models.users import User
-from db.models.messages import Conversation, ConversationMember
+from db.models.messages import Conversation, ConversationMember, Message
 
 from app.services.auth import get_current_api_user
-from app.schemas.messenger import ConversationUserResponse, ConversationResponse
+from app.schemas.messenger import ConversationUserResponse, ConversationResponse, MessageCreate, MessageResponse
+
+import uuid
 
 
 router = APIRouter(
@@ -134,4 +136,49 @@ async def get_or_create_conversation(
         raise
 
 
-    
+@router.post("/conversations/{conversation_id}/messages", response_model=MessageResponse)
+async def create_message(
+    conversation_id: uuid.UUID,
+    data: MessageCreate,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_api_user)
+):
+    target_conversation = await session.get(Conversation, conversation_id)
+
+    if target_conversation is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Диалог не найден"
+        ) 
+
+    member = await session.scalar(
+        select(ConversationMember).where(
+            ConversationMember.conversation_id == conversation_id,
+            ConversationMember.user_id == current_user.id
+        )
+    )
+
+    if member is None:
+        raise HTTPException(
+            status_code=403,
+            detail="Вы не являетесь участником этой беседы"
+        )
+
+    try:
+
+        message = Message(
+            conversation_id=conversation_id,
+            sender_id=current_user.id,
+            text=data.text
+        )
+
+        session.add(message)
+
+        await session.commit()
+        await session.refresh(message)
+
+        return message
+
+    except Exception:
+        await session.rollback()
+        raise
