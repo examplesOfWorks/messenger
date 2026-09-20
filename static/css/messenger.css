@@ -1,0 +1,9 @@
+.messenger-chat {
+    min-height: 0;
+    height: 100%;
+}
+
+.messages-container {
+    min-height: 0;
+    overflow-y: auto;
+}

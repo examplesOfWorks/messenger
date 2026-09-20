@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Сообщения
+{% endblock %}
+
+{% block custom_css %}
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', path='css/messenger.css') }}"
+    >
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <div class="row g-0 border rounded shadow-sm overflow-hidden"
+         style="height: 75vh;">
+
+        <!-- Левая часть: список диалогов -->
+        <div class="col-12 col-md-4 col-lg-3 border-end bg-light overflow-auto">
+
+            <div class="p-3 border-bottom bg-white">
+                <h5 class="mb-0">Диалоги</h5>
+            </div>
+
+            <div class="list-group list-group-flush">
+
+                {% if conversations %}
+
+                    {% for conversation in conversations %}
+
+                        <a
+                            href="/messenger/conversations/{{ conversation.id }}"
+                            class="list-group-item list-group-item-action"
+                        >
+                            <div class="d-flex align-items-center">
+
+                                {% if conversation.other_user.photo %}
+
+                                    <img
+                                        src="/media/users/{{ conversation.other_user.id }}/{{ conversation.other_user.photo }}"
+                                        alt="Фото {{ conversation.other_user.username }}"
+                                        class="rounded-circle me-3"
+                                        width="50"
+                                        height="50"
+                                        style="object-fit: cover;"
+                                    >
+
+                                {% else %}
+
+                                    <div
+                                        class="rounded-circle bg-secondary text-white
+                                               d-flex align-items-center justify-content-center
+                                               me-3 flex-shrink-0"
+                                        style="width: 50px; height: 50px;"
+                                    >
+                                        {{ conversation.other_user.username[0]|upper }}
+                                    </div>
+
+                                {% endif %}
+
+                                <div class="overflow-hidden">
+
+                                    <div class="fw-semibold text-truncate">
+                                        {{ conversation.other_user.username }}
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        </a>
+
+                    {% endfor %}
+
+                {% else %}
+
+                    <div class="p-4 text-center text-muted">
+                        У вас пока нет диалогов
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+        <!-- Правая часть: выбранный диалог -->
+        <div class="col-12 col-md-8 col-lg-9 d-flex flex-column bg-white messenger-chat">
+
+            {% if selected_conversation %}
+
+                <!-- Заголовок диалога -->
+                <div class="p-3 border-bottom flex-shrink-0">
+
+                    <div class="d-flex align-items-center">
+
+                        {% if selected_conversation.other_user.photo %}
+
+                            <img
+                                src="/media/users/{{ selected_conversation.other_user.id }}/{{ selected_conversation.other_user.photo }}"
+                                alt="Фото {{ selected_conversation.other_user.username }}"
+                                class="rounded-circle me-3"
+                                width="45"
+                                height="45"
+                                style="object-fit: cover;"
+                            >
+
+                        {% else %}
+
+                            <div
+                                class="rounded-circle bg-secondary text-white
+                                       d-flex align-items-center justify-content-center
+                                       me-3"
+                                style="width: 45px; height: 45px;"
+                            >
+                                {{ selected_conversation.other_user.username[0]|upper }}
+                            </div>
+
+                        {% endif %}
+
+                        <strong>
+                            {{ selected_conversation.other_user.username }}
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Сообщения -->
+                <div id="messages-container" class="messages-container flex-grow-1 p-4">
+
+                    {% if messages %}
+
+                        {% for message in messages %}
+
+                            {% if message.sender_id == current_user.id %}
+
+                                <div class="d-flex justify-content-end mb-3">
+
+                                    <div class="bg-primary text-white rounded px-3 py-2"
+                                         style="max-width: 70%;">
+
+                                        {{ message.text }}
+
+                                        <div class="small opacity-75 mt-1">
+                                            {{ message.created_at.strftime("%H:%M") }}
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            {% else %}
+
+                                <div class="d-flex justify-content-start mb-3">
+
+                                    <div class="bg-light border rounded px-3 py-2"
+                                         style="max-width: 70%;">
+
+                                        {{ message.text }}
+
+                                        <div class="small text-muted mt-1">
+                                            {{ message.created_at.strftime("%H:%M") }}
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            {% endif %}
+
+                        {% endfor %}
+
+                    {% else %}
+
+                        <div class="h-100 d-flex align-items-center justify-content-center">
+
+                            <span class="text-muted">
+                                Сообщений пока нет
+                            </span>
+
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- Поле отправки сообщения -->
+                <div class="p-3 border-top flex-shrink-0">
+
+                    <form
+                        method="post"
+                        action="/messenger/conversations/{{ selected_conversation.id }}/messages"
+                        class="d-flex gap-2"
+                    >
+
+                        <input
+                            type="text"
+                            name="text"
+                            class="form-control"
+                            placeholder="Введите сообщение..."
+                            autocomplete="off"
+                            required
+                        >
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary"
+                        >
+                            Отправить
+                        </button>
+
+                    </form>
+
+                </div>
+
+            {% else %}
+
+                <!-- Ничего не выбрано -->
+                <div class="h-100 d-flex align-items-center justify-content-center">
+
+                    <div class="text-center text-muted">
+
+                        <h5>Выберите диалог</h5>
+                        {% if conversation_id %}
+                            {{ conversation_id }}
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block custom_js %}
+    <script src="{{ url_for('static', path='js/messenger.js') }}"></script>
+{% endblock %}
