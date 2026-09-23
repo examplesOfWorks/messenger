@@ -112,3 +112,29 @@ async def get_messages(
     messages = result_messages.all()
 
     return messages
+
+
+async def dialogue_existence(
+    session: AsyncSession,
+    user_id: int,
+    target_user_id: int
+): 
+    
+    this_user = exists().where(
+        ConversationMember.conversation_id == Conversation.id,
+        ConversationMember.user_id == user_id,
+    )
+
+    other_user = exists().where(
+        ConversationMember.conversation_id == Conversation.id,
+        ConversationMember.user_id == target_user_id,
+    )
+
+    conversation = await session.scalar(
+        select(Conversation).where(
+            this_user,
+            other_user
+        )
+    )
+
+    return conversation

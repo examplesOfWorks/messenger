@@ -73,6 +73,18 @@
                                 >
                                     Открыть профиль
                                 </a>
+                                <form
+                                    method="post"
+                                    action="/messenger/conversations/direct/{{ person.friend.id }}"
+                                    class="mt-2"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="btn btn-outline-primary btn-sm w-100"
+                                    >
+                                        Написать сообщение
+                                    </button>
+                                </form>
                             </div>
 
                         </div>

@@ -99,7 +99,20 @@
                             >
                                 Посмотреть профиль
                             </a>
-
+                            {% if user.id != current_user.id %}
+                            <form
+                                method="post"
+                                action="/messenger/conversations/direct/{{ user.id }}"
+                                class="mt-2"
+                            >
+                                <button
+                                    type="submit"
+                                    class="btn btn-outline-primary btn-sm w-100"
+                                >
+                                    Написать сообщение
+                                </button>
+                            </form>
+                            {% endif %}
                         </div>
 
                     </div>

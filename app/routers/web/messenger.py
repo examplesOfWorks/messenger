@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -6,9 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.database import get_session
 from db.models.users import User
+from db.models.messages import Conversation, ConversationMember
 
 from app.services.auth import get_current_web_user
-from app.services.messenger import get_user_conversations, get_selected_conversation, get_messages
+from app.services.messenger import get_user_conversations, get_selected_conversation, get_messages, dialogue_existence
 
 import uuid
 
@@ -55,3 +56,65 @@ async def get_user_conversations_page(
             "messages": messages,
         }
     )
+
+@router.post("/conversations/direct/{user_id}", include_in_schema=False)
+async def get_or_create_conversation(
+    user_id: int,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_web_user)
+):
+    
+    if user_id == current_user.id:
+        raise HTTPException(
+            status_code=400,
+            detail="Нельзя создать диалог с самим собой",
+        )
+
+    target_user = await session.get(User, user_id)
+
+    if target_user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Пользователь не найден"
+        )
+    
+    conversation = await dialogue_existence(session, current_user.id, user_id)
+
+    if conversation is not None:
+        return RedirectResponse(
+            f"/messenger/conversations/{conversation.id}",
+            status_code=303
+        )
+    
+    try:
+
+        conversation = Conversation()
+
+        session.add(conversation)
+
+        await session.flush()
+
+        session.add_all(
+            [
+                ConversationMember(
+                    conversation_id=conversation.id,
+                    user_id=current_user.id
+                ),
+                ConversationMember(
+                    conversation_id=conversation.id,
+                    user_id=user_id
+                )
+            ]
+        )
+
+        await session.commit()
+        await session.refresh(conversation)
+
+        return RedirectResponse(
+            f"/messenger/conversations/{conversation.id}",
+            status_code=303
+        )
+
+    except Exception:
+        await session.rollback()
+        raise
