@@ -8,7 +8,10 @@ from db.database import get_session
 from db.models.users import User
 
 from app.services.auth import get_current_web_user
-from app.services.messenger import get_user_conversations
+from app.services.messenger import get_user_conversations, get_selected_conversation, get_messages
+
+import uuid
+
 
 
 templates = Jinja2Templates(directory="templates")
@@ -19,9 +22,11 @@ router = APIRouter(
 
 
 @router.get("/conversations", include_in_schema=False)
+@router.get("/conversations/{conversation_id}", include_in_schema=False)
 async def get_user_conversations_page(
     request: Request,
     session: AsyncSession = Depends(get_session),
+    conversation_id: uuid.UUID | None = None,
     current_user: User = Depends(get_current_web_user)
 ):
     if not current_user:
@@ -30,25 +35,15 @@ async def get_user_conversations_page(
             status_code=303
         )
 
-    conversations = await get_user_conversations(session, current_user.id)
-
-    conversation_data = []
-
-    for conversation in conversations:
-        other_member = next(
-            member
-            for member in conversation.members
-            if member.user_id != current_user.id
-        )
-
-        conversation_data.append({
-            "id": conversation.id,
-            "created_at": conversation.created_at,
-            "other_user": other_member.user,
-        })
+    conversation_data = await get_user_conversations(session, current_user.id)
 
     selected_conversation = None
     messages = []
+
+    if conversation_id is not None:
+        selected_conversation = await get_selected_conversation(session, current_user.id, conversation_id)
+
+        messages = await get_messages(session, conversation_id)
 
     return templates.TemplateResponse(
         request=request,
