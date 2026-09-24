@@ -7,3 +7,34 @@
     min-height: 0;
     overflow-y: auto;
 }
+
+.message-date {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin: 20px 0;
+
+    color: #6c757d;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.message-date::before,
+.message-date::after {
+    content: "";
+
+    height: 1px;
+
+    background-color: #dee2e6;
+
+    flex: 1;
+}
+
+.message-date::before {
+    margin-right: 12px;
+}
+
+.message-date::after {
+    margin-left: 12px;
+}

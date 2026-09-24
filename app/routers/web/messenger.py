@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Request, Depends, HTTPException
+from fastapi import APIRouter, Request, Depends, HTTPException, Form
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.database import get_session
 from db.models.users import User
-from db.models.messages import Conversation, ConversationMember
+from db.models.messages import Conversation, ConversationMember, Message
 
 from app.services.auth import get_current_web_user
 from app.services.messenger import get_user_conversations, get_selected_conversation, get_messages, dialogue_existence
@@ -112,6 +113,57 @@ async def get_or_create_conversation(
 
         return RedirectResponse(
             f"/messenger/conversations/{conversation.id}",
+            status_code=303
+        )
+
+    except Exception:
+        await session.rollback()
+        raise
+
+
+@router.post("/conversations/{conversation_id}/messages", include_in_schema=False)
+async def create_message(
+    conversation_id: uuid.UUID,
+    text: str = Form(...),
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_web_user)
+):
+    target_conversation = await session.get(Conversation, conversation_id)
+
+    if target_conversation is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Диалог не найден"
+        ) 
+
+    member = await session.scalar(
+        select(ConversationMember).where(
+            ConversationMember.conversation_id == conversation_id,
+            ConversationMember.user_id == current_user.id
+        )
+    )
+
+    if member is None:
+        raise HTTPException(
+            status_code=403,
+            detail="Вы не являетесь участником этой беседы"
+        )
+
+    try:
+
+        message = Message(
+            conversation_id=conversation_id,
+            sender_id=current_user.id,
+            text=text
+        )
+
+        session.add(message)
+
+        await session.commit()
+        await session.refresh(message)
+
+        return RedirectResponse(
+            f"/messenger/conversations/{conversation_id}",
             status_code=303
         )
 

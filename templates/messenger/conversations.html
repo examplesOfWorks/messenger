@@ -137,6 +137,11 @@
 
                         {% for message in messages %}
 
+                            <div
+                                class="message-wrapper"
+                                data-message-time="{{ message.created_at.isoformat() }}"
+                            >
+
                             {% if message.sender_id == current_user.id %}
 
                                 <div class="d-flex justify-content-end mb-3">
@@ -147,7 +152,9 @@
                                         {{ message.text }}
 
                                         <div class="small opacity-75 mt-1">
-                                            {{ message.created_at.strftime("%H:%M") }}
+                                            <span
+                                                class="message-time"
+                                            ></span>
                                         </div>
 
                                     </div>
@@ -164,7 +171,9 @@
                                         {{ message.text }}
 
                                         <div class="small text-muted mt-1">
-                                            {{ message.created_at.strftime("%H:%M") }}
+                                            <span
+                                                class="message-time"
+                                            ></span>
                                         </div>
 
                                     </div>
@@ -172,6 +181,8 @@
                                 </div>
 
                             {% endif %}
+
+                            </div>
 
                         {% endfor %}
 

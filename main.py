@@ -51,6 +51,32 @@ app.mount(
 )
 
 
+@app.exception_handler(403)
+def forbidden_page(request: Request, exc):
+    if "api" in request.url.path:
+        return JSONResponse(
+            status_code=403,
+            content={"detail": exc.detail}
+        )
+    
+    with Session(engine) as session:
+        current_user = get_current_web_user(
+            access_token=request.cookies.get("access_token"),
+            session=session,
+        )
+    
+    return templates.TemplateResponse(
+        request=request,
+        name="errors/403.html",
+        status_code=403,
+        context={
+            "request": request,
+            "detail": exc.detail if exc.detail != "Forbidden" else "",
+            "current_user": current_user
+        }
+    )
+
+
 @app.exception_handler(404)
 def not_found_page(request: Request, exc):
     if "api" in request.url.path:
