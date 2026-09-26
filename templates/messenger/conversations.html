@@ -62,11 +62,9 @@
                                 {% endif %}
 
                                 <div class="overflow-hidden">
-
                                     <div class="fw-semibold text-truncate">
                                         {{ conversation.other_user.username }}
                                     </div>
-
                                 </div>
 
                             </div>
@@ -121,9 +119,19 @@
 
                         {% endif %}
 
-                        <strong>
-                            {{ selected_conversation.other_user.username }}
-                        </strong>
+                        <div class="d-flex align-items-center gap-2">
+
+                            <span
+                                id="online-indicator-{{ selected_conversation.other_user.id }}"
+                                class="presence-indicator rounded-circle bg-secondary flex-shrink-0"
+                                style="width: 10px; height: 10px;"
+                            ></span>
+                        
+                            <strong>
+                                {{ selected_conversation.other_user.username }}
+                            </strong>
+                        
+                        </div>
 
                     </div>
 

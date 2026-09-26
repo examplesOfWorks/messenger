@@ -58,6 +58,21 @@
                                         {{ person.friend.name or person.friend.username }}
                                     </h5>
 
+                                    <!-- Статус -->
+                                    <div class="presence d-flex align-items-center gap-2 mb-4" 
+                                        data-user-id="{{ person.friend.id }}"
+                                    >
+                                        <span
+                                            id="online-indicator-{{ person.friend.id }}"
+                                            class="presence-indicator rounded-circle bg-secondary"
+                                            style="width: 10px; height: 10px;"
+                                        ></span>
+                                    
+                                        <span id="online-status-{{ person.friend.id }}" class="text-muted">
+                                            не в сети
+                                        </span>
+                                    </div>
+
                                     <p class="text-muted mb-0">
                                         @{{ person.friend.username }}
                                     </p>

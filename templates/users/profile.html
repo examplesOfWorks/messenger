@@ -69,6 +69,22 @@
                         {{ user.username }}
                     </h2>
 
+                    <!-- Статус -->
+                    <div class="presence d-flex align-items-center justify-content-center gap-2 mb-4" 
+                        data-user-id="{{ user.id }}"
+                    >
+                        <span
+                            id="online-indicator-{{ user.id }}"
+                            class="presence-indicator rounded-circle bg-secondary"
+                            style="width: 10px; height: 10px;"
+                        ></span>
+                    
+                        <span id="online-status-{{ user.id }}" class="text-muted">
+                            не в сети
+                        </span>
+                    </div>
+
+                    <!-- Имя -->
                     {% if user.name %}
                         <p class="text-muted mb-4">
                             {{ user.name }}
