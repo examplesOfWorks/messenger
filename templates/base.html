@@ -68,6 +68,12 @@
     <script>
       const currentUserId = {{ current_user.id }};
     </script>
+
+    {% if selected_conversation %}
+        <script>
+            const conversationId = "{{ selected_conversation.id }}";
+        </script>
+    {% endif %}
     
     <script src="{{ url_for('static', path='js/websocket.js') }}"></script>
   {% endif %}

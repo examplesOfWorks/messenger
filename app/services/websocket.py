@@ -1,5 +1,12 @@
 from fastapi import FastAPI, WebSocket
 
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from db.models.messages import ConversationMember
+
+import uuid
+
 
 app = FastAPI()
 
@@ -58,5 +65,44 @@ class ConnectionManager:
             for websocket in connections.copy():
                 await websocket.send_json(data)
 
+    async def send_to_user(
+        self,
+        user_id: int,
+        data: dict,
+    ):
+        connections = self.active_connections.get(user_id)
+
+        if not connections:
+            return
+
+        for websocket in connections.copy():
+            await websocket.send_json(data)
+
 
 manager = ConnectionManager()
+
+
+async def get_other_user_id(
+    session: AsyncSession,
+    conversation_id: uuid.UUID,
+    user_id: int,
+):
+
+    member = await session.scalar(
+        select(ConversationMember).where(
+            ConversationMember.conversation_id == conversation_id,
+            ConversationMember.user_id == user_id,
+        )
+    )
+
+    if member is None:
+        return None
+
+    other_user_id = await session.scalar(
+        select(ConversationMember.user_id).where(
+            ConversationMember.conversation_id == conversation_id,
+            ConversationMember.user_id != user_id,
+        )
+    )
+
+    return other_user_id

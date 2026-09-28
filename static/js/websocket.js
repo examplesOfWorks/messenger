@@ -42,6 +42,39 @@ function setOffline(userId) {
     indicatorElement.classList.add("bg-secondary");
 }
 
+
+const messageInput = document.getElementById("message-input");
+
+let typingTimeout;
+
+
+if (messageInput && typeof conversationId !== "undefined") {
+    messageInput.addEventListener("input", function () {
+
+        if (presenceSocket.readyState !== WebSocket.OPEN) {
+            return;
+        }
+        
+        presenceSocket.send(JSON.stringify({
+            type: "typing",
+            conversation_id: conversationId,
+            is_typing: true,
+        }));
+
+        clearTimeout(typingTimeout);
+
+        typingTimeout = setTimeout(() => {
+
+            presenceSocket.send(JSON.stringify({
+                type: "typing",
+                conversation_id: conversationId,
+                is_typing: false,
+            }));
+
+        }, 1000);
+    });
+}
+
 presenceSocket.onopen = function () {
     console.log("Presence WebSocket подключен");
 };
@@ -68,7 +101,32 @@ presenceSocket.onmessage = function (event) {
             setOffline(data.user_id);
         }
     }
+
+    if (data.type === "typing") {
+
+        if (
+            data.conversation_id !== conversationId
+        ) {
+            return;
+        }
+    
+        const typingIndicator =
+            document.getElementById(
+                "typing-indicator"
+            );
+    
+        if (!typingIndicator) {
+            return;
+        }
+    
+        typingIndicator.style.display =
+            data.is_typing
+                ? "block"
+                : "none";
+    }
 };
+
+
 
 presenceSocket.onclose = function () {
     console.log("Presence WebSocket отключен");
