@@ -1,10 +1,16 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.database import get_session
+from db.models.messages import Message
+
 from app.services.websocket import manager, get_other_user_id
 
+from datetime import datetime, timezone
 import uuid
+
 
 
 router = APIRouter()
@@ -64,6 +70,54 @@ async def websocket_endpoint(
                     },
                 )
 
+            elif event_type == "message_read":
+
+                try:
+                    message_id = data.get("message_id")
+                    conversation_id = uuid.UUID(
+                        data.get("conversation_id")
+                    )
+                except (ValueError, TypeError):
+                    continue
+
+                message = await session.scalar(
+                    select(Message).where(
+                        Message.id == message_id,
+                        Message.conversation_id == conversation_id,
+                    )
+                )
+
+                if message is None:
+                    continue
+
+                other_user_id = await get_other_user_id(
+                    session,
+                    conversation_id,
+                    user_id,
+                )
+
+                if other_user_id is None:
+                    continue
+
+                if message.sender_id == user_id:
+                    continue
+
+                if message.read_at is not None:
+                    continue
+
+                message.read_at = datetime.now(timezone.utc)
+
+                await session.commit()
+
+                await manager.send_to_user(
+                    message.sender_id,
+                    {
+                        "type": "message_read",
+                        "conversation_id": str(conversation_id),
+                        "message_id": message.id,
+                        "user_id": user_id,
+                    },
+                )
 
     except WebSocketDisconnect:
 

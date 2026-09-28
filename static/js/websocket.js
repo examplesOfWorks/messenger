@@ -63,7 +63,7 @@ if (messageInput && typeof conversationId !== "undefined") {
 
         clearTimeout(typingTimeout);
 
-        typingTimeout = setTimeout(() => {
+        typingTimeout = setTimeout(() => {      
 
             presenceSocket.send(JSON.stringify({
                 type: "typing",
@@ -75,8 +75,44 @@ if (messageInput && typeof conversationId !== "undefined") {
     });
 }
 
+function markMessagesAsRead() {
+    if (typeof conversationId === "undefined") {
+        return;
+    }
+
+    if (presenceSocket.readyState !== WebSocket.OPEN) {
+        return;
+    }
+
+    const messages = document.querySelectorAll(".message-wrapper");
+
+    messages.forEach(message => {
+
+        const senderId = Number(
+            message.dataset.senderId
+        );
+
+        if (senderId === currentUserId) {
+            return;
+        }
+
+        const messageId =
+            message.dataset.messageId;
+
+        presenceSocket.send(JSON.stringify({
+            type: "message_read",
+            conversation_id: conversationId,
+            message_id: Number(messageId),
+        }));
+
+    });
+}
+
 presenceSocket.onopen = function () {
+
     console.log("Presence WebSocket подключен");
+
+    markMessagesAsRead();
 };
 
 presenceSocket.onmessage = function (event) {
@@ -124,8 +160,21 @@ presenceSocket.onmessage = function (event) {
                 ? "block"
                 : "none";
     }
-};
 
+    if (data.type === "message_read") {
+
+        const statusElement =
+            document.querySelector(
+                `.message-read-status[data-message-id="${data.message_id}"]`
+            );
+    
+        if (!statusElement) {
+            return;
+        }
+    
+        statusElement.textContent = "✓✓";
+    }
+};
 
 
 presenceSocket.onclose = function () {

@@ -157,7 +157,9 @@
 
                             <div
                                 class="message-wrapper"
+                                data-message-id="{{ message.id }}"
                                 data-message-time="{{ message.created_at.isoformat() }}"
+                                data-sender-id="{{ message.sender_id }}"
                             >
 
                             {% if message.sender_id == current_user.id %}
@@ -173,6 +175,16 @@
                                             <span
                                                 class="message-time"
                                             ></span>
+                                            <span
+                                                class="message-read-status"
+                                                data-message-id="{{ message.id }}"
+                                            >
+                                                {% if message.read_at %}
+                                                    ✓✓
+                                                {% else %}
+                                                    ✓
+                                                {% endif %}
+                                            </span>
                                         </div>
 
                                     </div>
