@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+
 from sqlalchemy import select, exists
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -6,6 +7,41 @@ from sqlalchemy.orm import selectinload
 from db.models.messages import Conversation, ConversationMember, Message
 
 import uuid
+
+
+
+async def create_message(
+    session: AsyncSession,
+    conversation_id: uuid.UUID,
+    user_id: int,
+    text: str,
+):
+
+    member = await session.scalar(
+        select(ConversationMember).where(
+            ConversationMember.conversation_id == conversation_id,
+            ConversationMember.user_id == user_id,
+        )
+    )
+
+    if member is None:
+        raise HTTPException(
+            status_code=403,
+            detail="Вы не являетесь участником этой беседы",
+        )
+
+    message = Message(
+        conversation_id=conversation_id,
+        sender_id=user_id,
+        text=text,
+    )
+
+    session.add(message)
+
+    await session.commit()
+    await session.refresh(message)
+
+    return message
 
 
 async def get_user_conversations(
@@ -106,7 +142,7 @@ async def get_messages(
         .where( 
             Message.conversation_id == conversation_id 
         ) 
-        .order_by(Message.created_at) 
+        .order_by(Message.id) 
     )
         
     messages = result_messages.all()

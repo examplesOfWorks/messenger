@@ -44,6 +44,7 @@ function setOffline(userId) {
 
 
 const messageInput = document.getElementById("message-input");
+const pendingReadMessages = new Set();
 
 let typingTimeout;
 
@@ -118,6 +119,11 @@ presenceSocket.onopen = function () {
 presenceSocket.onmessage = function (event) {
     const data = JSON.parse(event.data);
 
+    if (data.type === "auth_expired") {
+        window.location.href = "/users/login";
+        return;
+    }
+
     console.log("Presence event:", data);
 
     if (data.type === "online_users") {
@@ -169,6 +175,7 @@ presenceSocket.onmessage = function (event) {
             );
     
         if (!statusElement) {
+            pendingReadMessages.add(String(data.message_id));
             return;
         }
     

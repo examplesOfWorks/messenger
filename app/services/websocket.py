@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket
+from fastapi import WebSocket
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,9 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db.models.messages import ConversationMember
 
 import uuid
-
-
-app = FastAPI()
 
 
 class ConnectionManager:

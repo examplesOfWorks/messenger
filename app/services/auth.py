@@ -1,6 +1,6 @@
 import jwt
 
-from fastapi import Depends, HTTPException, Cookie
+from fastapi import Depends, HTTPException, Cookie, WebSocket
 from fastapi.security import OAuth2PasswordBearer
 
 from sqlalchemy import select
@@ -67,3 +67,35 @@ async def get_current_web_user(
         return None
 
     return user
+
+
+async def get_websocket_user_id(
+    websocket: WebSocket,
+) -> int | None:
+    access_token = websocket.cookies.get("access_token")
+
+    if access_token is None:
+        return None
+
+    try:
+        payload = jwt.decode(
+            access_token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM],
+        )
+
+        user_id = payload.get("sub")
+
+        if user_id is None:
+            return None
+
+        return int(user_id)
+
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=401,
+            detail="Токен истёк",
+        )
+
+    except (jwt.InvalidTokenError, ValueError):
+        return None

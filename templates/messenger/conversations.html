@@ -149,7 +149,10 @@
 
 
                 <!-- Сообщения -->
-                <div id="messages-container" class="messages-container flex-grow-1 p-4">
+                <div id="messages-container" 
+                    class="messages-container flex-grow-1 p-4"
+                    data-current-user-id="{{ current_user.id }}"
+                >
 
                     {% if messages %}
 
@@ -218,7 +221,7 @@
 
                     {% else %}
 
-                        <div class="h-100 d-flex align-items-center justify-content-center">
+                        <div class="empty-messages h-100 d-flex align-items-center justify-content-center">
 
                             <span class="text-muted">
                                 Сообщений пока нет
@@ -230,14 +233,63 @@
 
                 </div>
 
+                <template id="own-message-template">
+                    <div
+                        class="message-wrapper"
+                        data-message-id=""
+                        data-message-time=""
+                        data-sender-id=""
+                    >
+                        <div class="d-flex justify-content-end mb-3">
+                            <div
+                                class="bg-primary text-white rounded px-3 py-2"
+                                style="max-width: 70%;"
+                            >
+                                <span class="message-text"></span>
+                
+                                <div class="small opacity-75 mt-1">
+                                    <span class="message-time"></span>
+                
+                                    <span class="message-read-status" data-message-id="">
+                                        ✓
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                
+                
+                <template id="other-message-template">
+                    <div
+                        class="message-wrapper"
+                        data-message-id=""
+                        data-message-time=""
+                        data-sender-id=""
+                    >
+                        <div class="d-flex justify-content-start mb-3">
+                            <div
+                                class="bg-light border rounded px-3 py-2"
+                                style="max-width: 70%;"
+                            >
+                                <span class="message-text"></span>
+                
+                                <div class="small text-muted mt-1">
+                                    <span class="message-time"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
 
                 <!-- Поле отправки сообщения -->
                 <div class="p-3 border-top flex-shrink-0">
 
                     <form
-                        method="post"
-                        action="/messenger/conversations/{{ selected_conversation.id }}/messages"
+                        id="message-form"
                         class="d-flex gap-2"
+                        data-conversation-id="{{ selected_conversation.id }}"
                     >
 
                         <input
