@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 
-from sqlalchemy import select, exists
+from sqlalchemy import select, exists, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -58,13 +58,38 @@ async def get_user_conversations(
         .where(
             ConversationMember.user_id == user_id,
             exists().where(
-            Message.conversation_id == Conversation.id
+                Message.conversation_id == Conversation.id
             )
         )
         .order_by(Conversation.created_at.desc())
     )
 
     conversations = result_conversations.all()
+
+    if not conversations: 
+        return []
+    
+    conversation_ids = [
+        conversation.id 
+        for conversation in conversations
+    ]
+
+    unread_result = await session.execute(
+        select(
+            Message.conversation_id,
+            func.count(Message.id)
+        )
+        .where(
+            Message.conversation_id.in_(conversation_ids),
+            Message.sender_id != user_id, Message.read_at.is_(None),
+        ) 
+        .group_by(Message.conversation_id)
+    ) 
+    
+    unread_counts = { 
+        conversation_id: count 
+        for conversation_id, count in unread_result.all()
+    }
 
     conversation_data = []
 
@@ -79,6 +104,7 @@ async def get_user_conversations(
             "id": conversation.id,
             "created_at": conversation.created_at,
             "other_user": other_member.user,
+            "unread_count": unread_counts.get(conversation.id, 0)
         })
 
     return conversation_data
@@ -174,3 +200,38 @@ async def dialogue_existence(
     )
 
     return conversation
+
+
+async def get_unread_count(
+    session: AsyncSession,
+    conversation_id: uuid.UUID,
+    user_id: int,
+):
+    result = await session.scalar(
+        select(func.count(Message.id)).where(
+            Message.conversation_id == conversation_id,
+            Message.sender_id != user_id,
+            Message.read_at.is_(None),
+        )
+    )
+
+    return result or 0
+
+
+async def get_total_unread_count(
+    session: AsyncSession,
+    user_id: int,
+):
+    result = await session.scalar(
+        select(func.count(Message.id)).where(
+            Message.sender_id != user_id,
+            Message.read_at.is_(None),
+            Message.conversation_id.in_(
+                select(ConversationMember.conversation_id).where(
+                    ConversationMember.user_id == user_id
+                )
+            )
+        )
+    )
+
+    return result or 0

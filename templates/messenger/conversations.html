@@ -61,9 +61,21 @@
 
                                 {% endif %}
 
-                                <div class="overflow-hidden">
-                                    <div class="fw-semibold text-truncate">
-                                        {{ conversation.other_user.username }}
+                                <div class="overflow-hidden flex-grow-1">
+                                    <div class="d-flex align-items-center justify-content-between gap-2">
+                                        <div class="fw-semibold text-truncate">
+                                            {{ conversation.other_user.username }}
+                                        </div>
+
+                                        <span
+                                            class="badge rounded-pill bg-primary unread-count"
+                                            data-conversation-id="{{ conversation.id }}"
+                                            {% if conversation.unread_count == 0 %}
+                                                style="display: none;"
+                                            {% endif %}
+                                        >
+                                            {{ conversation.unread_count }}
+                                        </span>
                                     </div>
                                 </div>
 
@@ -341,5 +353,7 @@
 
 
 {% block custom_js %}
-    <script src="{{ url_for('static', path='js/messenger.js') }}"></script>
+    {% if selected_conversation %}
+        <script src="{{ url_for('static', path='js/messenger.js') }}"></script>
+    {% endif %}
 {% endblock %}

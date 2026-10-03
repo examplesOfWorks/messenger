@@ -7,7 +7,7 @@ from db.database import get_session
 from db.models.messages import Message
 
 from app.services.auth import get_websocket_user_id
-from app.services.messenger import create_message
+from app.services.messenger import create_message, get_total_unread_count
 from app.services.websocket import manager, get_other_user_id
 
 from datetime import datetime, timezone
@@ -193,6 +193,19 @@ async def websocket_endpoint(
 
                 await session.commit()
 
+                total_unread_count = await get_total_unread_count(
+                    session=session,
+                    user_id=user_id,
+                )
+
+                await manager.send_to_user(
+                    user_id,
+                    {
+                        "type": "unread_count",
+                        "count": total_unread_count,
+                    },
+                )
+
                 await manager.send_to_user(
                     message.sender_id,
                     {
@@ -202,6 +215,19 @@ async def websocket_endpoint(
                         "user_id": user_id,
                     },
                 )
+
+            if event_type == "get_unread_count":
+                total_unread_count = await get_total_unread_count(
+                    session=session,
+                    user_id=user_id,
+                )
+
+                await websocket.send_json({
+                    "type": "unread_count",
+                    "count": total_unread_count,
+                })
+
+                continue
 
     except WebSocketDisconnect:
 

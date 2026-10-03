@@ -62,18 +62,17 @@ class ConnectionManager:
             for websocket in connections.copy():
                 await websocket.send_json(data)
 
-    async def send_to_user(
-        self,
-        user_id: int,
-        data: dict,
-    ):
+    async def send_to_user(self, user_id: int, data: dict):
         connections = self.active_connections.get(user_id)
 
         if not connections:
             return
 
         for websocket in connections.copy():
-            await websocket.send_json(data)
+            try:
+                await websocket.send_json(data)
+            except RuntimeError:
+                self.disconnect(user_id, websocket)
 
 
 manager = ConnectionManager()

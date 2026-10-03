@@ -42,6 +42,31 @@ function setOffline(userId) {
     indicatorElement.classList.add("bg-secondary");
 }
 
+function updateTotalUnreadCount(increment) {
+    const badge = document.getElementById(
+        "total-unread-count"
+    );
+
+    if (!badge) {
+        return;
+    }
+
+    const currentCount =
+        Number(badge.textContent) || 0;
+
+    const newCount = Math.max(
+        0,
+        currentCount + increment
+    );
+
+    badge.textContent = newCount;
+
+    badge.style.display =
+        newCount > 0
+            ? "inline-block"
+            : "none";
+}
+
 
 const messageInput = document.getElementById("message-input");
 const pendingReadMessages = new Set();
@@ -97,8 +122,7 @@ function markMessagesAsRead() {
             return;
         }
 
-        const messageId =
-            message.dataset.messageId;
+        const messageId = message.dataset.messageId;
 
         presenceSocket.send(JSON.stringify({
             type: "message_read",
@@ -114,6 +138,10 @@ presenceSocket.onopen = function () {
     console.log("Presence WebSocket подключен");
 
     markMessagesAsRead();
+
+    presenceSocket.send(JSON.stringify({
+        type: "get_unread_count",
+    }));
 };
 
 presenceSocket.onmessage = function (event) {
@@ -130,6 +158,26 @@ presenceSocket.onmessage = function (event) {
         data.user_ids.forEach(userId => {
             setOnline(userId);
         });
+
+        return;
+    }
+
+    if (data.type === "new_message") {
+        const message = data.message;
+
+        const isOwnMessage =
+            Number(message.sender_id) === currentUserId;
+
+        const isCurrentConversation =
+            typeof conversationId !== "undefined" &&
+            message.conversation_id === String(conversationId);
+
+        if (
+            !isOwnMessage &&
+            !isCurrentConversation
+        ) {
+            updateTotalUnreadCount(1);
+        }
 
         return;
     }
@@ -180,6 +228,25 @@ presenceSocket.onmessage = function (event) {
         }
     
         statusElement.textContent = "✓✓";
+    }
+
+    if (data.type === "unread_count") {
+        const badge = document.getElementById(
+            "total-unread-count"
+        );
+    
+        if (!badge) {
+            return;
+        }
+    
+        badge.textContent = data.count;
+    
+        badge.style.display =
+            data.count > 0
+                ? "inline-block"
+                : "none";
+    
+        return;
     }
 };
 

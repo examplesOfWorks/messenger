@@ -37,7 +37,16 @@
                 <a class="nav-link" href="/friendships/friend-requests/incoming">Заявки в друзья</a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="/messenger/conversations">Сообщения</a>
+                <a class="nav-link" href="/messenger/conversations">
+                  <span>Сообщения</span>
+                  <span
+                      id="total-unread-count"
+                      class="badge rounded-pill bg-primary"
+                      style="display: none;"
+                  >
+                      0
+                  </span>
+                </a>
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="/users/logout">Выход</a>
@@ -71,7 +80,7 @@
 
     {% if selected_conversation %}
         <script>
-            const conversationId = "{{ selected_conversation.id }}";
+          const conversationId = "{{ selected_conversation.id }}";
         </script>
     {% endif %}
     

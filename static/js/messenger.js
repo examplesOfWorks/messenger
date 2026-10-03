@@ -5,43 +5,57 @@ const messageForm =
     document.getElementById("message-form");
 
 // Отправка сообщения
-messageForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    
-    const text = messageInput.value.trim();
-    
-    if (!text) {
-        return;
-    }
-    
-    if (presenceSocket.readyState !== WebSocket.OPEN) {
-        return;
-    }
-    
-    presenceSocket.send(
-        JSON.stringify({
-            type: "send_message",
-            conversation_id: conversationId,
-            text: text,
-        })
-    );
-    
-    messageInput.value = "";
-});
+if (messageForm) {
+    messageForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        
+        const text = messageInput.value.trim();
+        
+        if (!text) {
+            return;
+        }
+        
+        if (presenceSocket.readyState !== WebSocket.OPEN) {
+            return;
+        }
+        
+        presenceSocket.send(
+            JSON.stringify({
+                type: "send_message",
+                conversation_id: conversationId,
+                text: text,
+            })
+        );
+        
+        messageInput.value = "";
+    });
+}
 
 // Получение сообщений
-
 presenceSocket.addEventListener("message", (event) => {
     const data = JSON.parse(event.data);
 
     if (data.type === "new_message") {
-        addMessage(data.message);
+        const message = data.message;
 
-        if (
-            Number(data.message.sender_id) !== currentUserId &&
-            data.message.conversation_id === String(conversationId)
-        ) {
-            markMessageAsRead(data.message);
+        const isOwnMessage =
+            Number(message.sender_id) === currentUserId;
+
+        const isCurrentConversation =
+            typeof conversationId !== "undefined" &&
+            message.conversation_id === String(conversationId);
+
+        if (!isOwnMessage && !isCurrentConversation) {
+            updateUnreadCount(
+                message.conversation_id,
+                1
+            );
+        }
+
+        addMessage(message);
+
+        if (!isOwnMessage && isCurrentConversation) {
+            markMessageAsRead(message);
         }
     }
 });
@@ -61,7 +75,6 @@ function markMessageAsRead(message) {
 }
 
 // Добавление сообщения
-
 function addMessage(message) {
     if (
         message.conversation_id !==
@@ -157,6 +170,35 @@ function addMessage(message) {
         messagesContainer.scrollHeight;
 }
 
+function updateUnreadCount(conversationId, increment = 1) {
+    const badge = document.querySelector(
+        `.unread-count[data-conversation-id="${conversationId}"]`
+    );
+
+    if (!badge) {
+        return;
+    }
+
+    const currentCount = Number(badge.textContent) || 0;
+    const newCount = currentCount + increment;
+
+    badge.textContent = newCount;
+    badge.style.display = newCount > 0 ? "inline-block" : "none";
+}
+
+function clearUnreadCount(conversationId) {
+    const badge = document.querySelector(
+        `.unread-count[data-conversation-id="${conversationId}"]`
+    );
+
+    if (!badge) {
+        return;
+    }
+
+    badge.textContent = "0";
+    badge.style.display = "none";
+}
+
 // Добавление дат
 const messages = document.querySelectorAll(".message-wrapper");
 
@@ -198,6 +240,10 @@ messages.forEach(messageElement => {
         previousDate = localDateKey;
     }
 });
+
+if (typeof conversationId !== "undefined") {
+    clearUnreadCount(conversationId);
+}
 
 requestAnimationFrame(() => {
 
