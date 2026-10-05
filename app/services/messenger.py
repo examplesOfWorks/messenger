@@ -114,21 +114,7 @@ async def get_selected_conversation(
     session: AsyncSession,
     user_id: int,
     conversation_id: uuid.UUID
-):
-        
-    member = await session.scalar( 
-        select(ConversationMember).where( 
-            ConversationMember.conversation_id == conversation_id, 
-            ConversationMember.user_id == user_id 
-        ) 
-    )
-
-    if member is None: 
-        raise HTTPException( 
-            status_code=403, 
-            detail="Вы не являетесь участником этой беседы"
-        )
-
+): 
     selected_conversation_obj = await session.scalar( 
         select(Conversation) 
         .options( 
@@ -143,6 +129,19 @@ async def get_selected_conversation(
     if selected_conversation_obj is None: 
         raise HTTPException( 
             status_code=404, detail="Диалог не найден"
+        )
+        
+    current_member = await session.scalar( 
+        select(ConversationMember).where( 
+            ConversationMember.conversation_id == conversation_id, 
+            ConversationMember.user_id == user_id 
+        ) 
+    )
+
+    if current_member is None: 
+        raise HTTPException( 
+            status_code=403, 
+            detail="Вы не являетесь участником этой беседы"
         )
 
     for member in selected_conversation_obj.members:
