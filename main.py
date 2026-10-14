@@ -1,7 +1,7 @@
 import uvicorn
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 
@@ -52,6 +52,14 @@ app.mount(
     StaticFiles(directory="static"),
     name="static",
 )
+
+
+@app.get("/", include_in_schema=False)
+async def home():
+    return RedirectResponse(
+        url="/users/profile",
+        status_code=303,
+    )
 
 
 @app.exception_handler(403)
