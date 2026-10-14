@@ -4,8 +4,8 @@ from pydantic import BaseModel, Field, EmailStr
 
 class UserCreate(BaseModel):
     username: str = Field(
-        min_lenght=3,
-        max_lenght=50,
+        min_length=3,
+        max_length=50,
         pattern=r"^[a-z0-9_]+$"
     )
     name: str | None = Field(

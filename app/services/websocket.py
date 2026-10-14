@@ -58,9 +58,12 @@ class ConnectionManager:
         })
     
     async def broadcast(self, data:dict):
-        for connections in self.active_connections.values():
+        for user_id, connections in self.active_connections.copy().items():
             for websocket in connections.copy():
-                await websocket.send_json(data)
+                try:
+                    await websocket.send_json(data)
+                except RuntimeError:
+                    self.disconnect(user_id, websocket)
 
     async def send_to_user(self, user_id: int, data: dict):
         connections = self.active_connections.get(user_id)
@@ -102,3 +105,5 @@ async def get_other_user_id(
     )
 
     return other_user_id
+
+

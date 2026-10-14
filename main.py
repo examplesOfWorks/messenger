@@ -5,9 +5,7 @@ from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 
-from db.database import engine
-
-from sqlalchemy.orm import Session
+from db.database import AsyncSessionLocal
 
 from app.routers.api.users import router as users_api_router
 from app.routers.web.users import router as users_web_router
@@ -57,15 +55,15 @@ app.mount(
 
 
 @app.exception_handler(403)
-def forbidden_page(request: Request, exc):
+async def forbidden_page(request: Request, exc):
     if "api" in request.url.path:
         return JSONResponse(
             status_code=403,
             content={"detail": exc.detail}
         )
     
-    with Session(engine) as session:
-        current_user = get_current_web_user(
+    async with AsyncSessionLocal() as session:
+        current_user = await get_current_web_user(
             access_token=request.cookies.get("access_token"),
             session=session,
         )
@@ -83,15 +81,15 @@ def forbidden_page(request: Request, exc):
 
 
 @app.exception_handler(404)
-def not_found_page(request: Request, exc):
+async def not_found_page(request: Request, exc):
     if "api" in request.url.path:
         return JSONResponse(
             status_code=404,
             content={"detail": exc.detail}
         )
     
-    with Session(engine) as session:
-        current_user = get_current_web_user(
+    async with AsyncSessionLocal() as session:
+        current_user = await get_current_web_user(
             access_token=request.cookies.get("access_token"),
             session=session,
         )
