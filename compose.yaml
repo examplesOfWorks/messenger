@@ -1,0 +1,68 @@
+services:
+  chat:
+    build: .
+    environment:
+      DATABASE_URL: ${DOCKER_DATABASE_URL}
+    container_name: chat
+    restart: unless-stopped
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    env_file:
+      - .env 
+    networks:
+      - dbnet
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - .:/app
+      - media_data:/app/media
+  migrate:
+    build: .
+    command: alembic upgrade head
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DOCKER_DATABASE_URL}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - dbnet
+  adminer:
+    image: adminer:latest
+    container_name: adminer
+    ports:
+      - "127.0.0.1:8080:8080"
+    networks:
+      - dbnet
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:17
+    container_name: psgr
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dbnet
+
+networks:
+  dbnet:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  media_data:
