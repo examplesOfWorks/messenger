@@ -4,7 +4,7 @@ from pathlib import Path
 from uuid import uuid4
 
 PATH_TO_IMAGES = Path("media/users")
-PATH_TO_IMAGES.mkdir(exist_ok=True)
+PATH_TO_IMAGES.mkdir(parents=True, exist_ok=True)
 
 async def upload_image(file: UploadFile, user_id: int):
     if file.content_type not in {

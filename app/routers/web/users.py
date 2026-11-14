@@ -108,7 +108,7 @@ async def register_user(
 
         user_id = new_user.id
 
-        if image:
+        if image.filename:
             image_name = await upload_image(image, user_id)
             new_user.photo = image_name
 
