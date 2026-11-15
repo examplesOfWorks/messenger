@@ -140,16 +140,20 @@ async def login(
 
 
 @router.get("/profile", response_model=UserResponse)
-@router.get("/profile/{user_id}", response_model=UserResponse)
+@router.get("/profile/{username}", response_model=UserResponse)
 async def profile(
-    user_id: int | None = None,
+    username: str | None = None,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_api_user)
 ):
-    if user_id is None:
+    if username is None:
         return current_user
 
-    user = await session.get(User, user_id)
+    result = await session.execute(
+        select(User).where(User.username == username)
+    )
+
+    user = result.scalar_one_or_none()
 
     if user is None:
         raise HTTPException(

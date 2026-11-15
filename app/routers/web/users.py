@@ -204,11 +204,11 @@ async def login(
 
 
 @router.get("/profile", include_in_schema=False)
-@router.get("/profile/{user_id}", include_in_schema=False)
+@router.get("/profile/{username}", include_in_schema=False)
 async def profile(
     request: Request,
     session: AsyncSession = Depends(get_session),
-    user_id: int | None = None,
+    username: str | None = None,
     current_user: User = Depends(get_current_web_user),
     success: str | None = Query(default=None),
     error: str | None = Query(default=None)
@@ -220,10 +220,13 @@ async def profile(
             status_code=303
         )
 
-    if user_id is None:
+    if username is None:
         user = current_user
     else:
-        user = await session.get(User, user_id)
+        result = await session.execute(
+            select(User).where(User.username == username)
+        )
+        user = result.scalar_one_or_none()
 
     if user is None:
         raise HTTPException(
@@ -239,10 +242,10 @@ async def profile(
             select(Friendship).where(
                 (
                     (Friendship.requester_id == current_user.id)
-                    & (Friendship.addressee_id == user_id)
+                    & (Friendship.addressee_id == user.id)
                 ) |
                 (
-                    (Friendship.requester_id == user_id)
+                    (Friendship.requester_id == user.id)
                     & (Friendship.addressee_id == current_user.id)
                 )
             )

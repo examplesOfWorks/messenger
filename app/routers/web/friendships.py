@@ -184,13 +184,14 @@ async def friend_request(
     current_user: User = Depends(get_current_web_user)
 ):
 
-    if user_id == current_user.id:
+    target_user = await session.get(User, user_id)
+
+    if target_user.id == current_user.id:
         return RedirectResponse(
-            url=f"/users/profile/{user_id}?error=Нельзя добавить самого себя",
+            url=f"/users/profile/{target_user.username}?error=Нельзя добавить самого себя",
             status_code=303,
         )
 
-    target_user = await session.get(User, user_id)
 
     if target_user is None:
         return RedirectResponse(
@@ -213,7 +214,7 @@ async def friend_request(
 
     if result.scalar_one_or_none() is not None:
         return RedirectResponse(
-            url=f"/users/profile/{user_id}?error=Заявка уже была отправлена",
+            url=f"/users/profile/{target_user.username}?error=Заявка уже была отправлена",
             status_code=303,
         )
 
@@ -231,14 +232,14 @@ async def friend_request(
         await session.rollback()
 
         return RedirectResponse(
-            url=f"/users/profile/{user_id}?error=Не удалось отправить заявку",
+            url=f"/users/profile/{target_user.username}?error=Не удалось отправить заявку",
             status_code=303,
         )
 
     await session.refresh(friendship)
 
     return RedirectResponse(
-        url=f"/users/profile/{user_id}?success=Заявка отправлена",
+        url=f"/users/profile/{target_user.username}?success=Заявка отправлена",
         status_code=303,
     )
 
