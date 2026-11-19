@@ -1,7 +1,9 @@
 import os
 
-import pytest_asyncio
 from dotenv import load_dotenv
+load_dotenv()
+
+import pytest_asyncio
 
 from fastapi import WebSocketDisconnect
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
@@ -12,12 +14,11 @@ from app.services.auth import get_current_api_user, get_current_web_user
 from db.database import get_session
 from db.models.base import Base
 from db.models.users import User
+from db.models.messages import Conversation, ConversationMember, Message
+from db.models.friendships import Friendship
 
 from httpx import ASGITransport, AsyncClient
 
-
-
-load_dotenv()
 
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 
